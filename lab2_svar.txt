@@ -1,0 +1,59 @@
+---Uppgift 1---
+Eftersom t.ex. metoden execvp avbryter programmet och hoppar in i dess kod ist, och inte kommer
+fortsätta programmet om inte ett error uppstår, så kan det vara bra att fork:a och ha exekveringen
+i en separat process ist. Förtydligar med ett exempel nedan:
+
+kod...
+kod...
+execvp
+kod... <---- kommer aldrig nå denna rad om inte ett error ges i exekvp
+kod...
+
+GÖR DÅ ISTÄLLET
+
+kod...
+kod...
+fork()
+if()
+	execvp
+else() <--- kommer komma hit även om execvp funkar
+	kod...
+	kod...
+
+
+---Uppgift 2---
+Det kan skapas "zombie"-processer. Även om man dödar en viss process, så behöver man kontrollera att den är död. 
+Detta kan göras med wait(), som då väntar in en process tills man vet att den är död. 
+(Wait() skyfflar med andra ord undan liket som t.ex. en SIGKILL har dödat //Quote Mattias Folke) ;)
+
+
+---Uppgift 3---
+Signal Segmentation Violation - skickas till en process när den gör en icke-okej referens till en plats i minnet.
+
+
+---Uppgift 4---
+Kärnan, som tar emot eller sänder ut en SIGKILL-signal till en process, inser helt enkelt att processen ska termineras
+och tar bort den från process-table:t. Så svaret är att processen inte kan blocka en SIGKILL signal då den inte
+ens märker av att den kommer, den blir bara bortplockad/terminerad.
+[refr. http://blogofsiva.blogspot.se/2012/06/why-sigkill-and-sigstop-cannot-be.html]
+
+
+---Uppgift 5---
+Det är en deklaration av en funktion som heter disp, tar en int som parameter och returnerar en
+pekare till en void.
+
+
+---Uppgift 6---
+Det finns någonting som heter signal disposition som den troligtvis använder sig av. En signals disposition
+anger hur en process ska bete sig när en signal kommer till den. 
+
+
+---Uppgift 7---
+Ctrl+C skickar en SIGINT-signal. Denna signal kan hateras av en signal-handler
+Det man då vill göra, är att ta emot denna signal och inte göra någonting i signal-handler:n.
+
+
+---Uppgift 8---
+När användaren startar ett minishell, läses working directory av environmentvariablerna,
+cd ändrar sedan working directory i processen men däremot lämnas environmentvariabeln oförändrad.
+Detta är anledningen till beteendet vi ser i bilden vid uppgift 8.
