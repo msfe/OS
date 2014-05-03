@@ -11,6 +11,10 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <stdio.h>
+#include <signal.h>
+
+void signal_handler_parrent(int);
 
 int main(int argc, char *argv[], char **envp)
 {
@@ -22,15 +26,19 @@ int main(int argc, char *argv[], char **envp)
   char **args;
   char *p;
   int nbrOfSpaces;
+  int moreDeadProcesses;
 
   int status;
   pid_t cpid;
 
   char EXIT_STRING[] = "exit";
   char CD_STRING[] = "cd";
+  char AND_STRING[] = "&";
   int DEBUG = 0;
 
   printf("Welcome to miniTerm 0.1. Please state your commands\n");
+
+  signal(SIGINT, signal_handler_parrent);
 
 
   while(1){
@@ -61,6 +69,23 @@ int main(int argc, char *argv[], char **envp)
       p = strtok (NULL, " "); //Get next strtok
     }
 
+
+    //Evaluate if a background process is done
+    moreDeadProcesses = 1;
+    while(moreDeadProcesses){
+      moreDeadProcesses = 0;
+      cpid = waitpid(-1, &status, WNOHANG);
+      if(cpid>0){
+        printf("Process %d executed\n",cpid);
+        moreDeadProcesses = 1;
+      }
+    }
+
+    //If nothing is entered
+    if (nbrOfSpaces == 0){
+      continue;
+    }
+
     // realloc one extra element for the last NULL
     args = realloc (args, sizeof (char*) * (nbrOfSpaces+1));
     args[nbrOfSpaces] = 0;
@@ -72,7 +97,6 @@ int main(int argc, char *argv[], char **envp)
       }
     }
 
-    //scanf("%s", input); //Tar bara till första mellanslaget
 
     if (strcmp((char *)args[0],EXIT_STRING) == 0){
       exit(EXIT_SUCCESS);
@@ -85,11 +109,10 @@ int main(int argc, char *argv[], char **envp)
       }
       continue;
     }
-    
 
     time_t startTime = time(NULL);
 
-    cpid = fork(); /* Create a pipe */
+    cpid = fork(); /* Create a new process */
 
     /* If processID is invalid value */
     if (cpid == -1) 
@@ -100,7 +123,14 @@ int main(int argc, char *argv[], char **envp)
 
     /* Child */
     if (cpid == 0) 
-    {    
+    { 
+      //Handle differense between forground and background process 
+      if(nbrOfSpaces > 0 && strcmp((char *)args[nbrOfSpaces-1],AND_STRING) == 0){ //Background process
+        args[nbrOfSpaces-1] = NULL;
+        printf("PID: %d\tRunning in: Background\n",getpid());
+      } else {
+        printf("PID: %d\tRunning in: Foreground\n",getpid());
+      }
       execvp(args[0], args);
       exit(EXIT_FAILURE);
     } 
@@ -108,11 +138,19 @@ int main(int argc, char *argv[], char **envp)
     /* Parent */
     else 
     { 
-      while(1){
+        if(nbrOfSpaces > 0 && strcmp((char *)args[nbrOfSpaces-1],AND_STRING) == 0){ //Background process
+          //Do nothing
+        } else {
+      while(1){ //forground processes
         waitpid(cpid, &status, 0);
+         if(WIFSIGNALED(status)){
+           free (args);
+           printf("Process %d executed for %d seconds\n",cpid, (int) difftime(time(NULL),startTime));
+           break;
+         }
         if(status == 0){
           free (args);
-          printf("Program executed for %d seconds\n", (int) difftime(time(NULL),startTime));
+          printf("Process %d executed for %d seconds\n",cpid, (int) difftime(time(NULL),startTime));
           break; //Terminated in a correct way
         } else {
           if(WIFEXITED(status)){        
@@ -120,7 +158,12 @@ int main(int argc, char *argv[], char **envp)
           }
         }
       }
-      // printf("%s\n","I'm the Parent!");
     }
+      // printf("%s\n","I'm the Parent!");
   }
+}
+}
+
+
+void signal_handler_parrent(int signal) {
 }
