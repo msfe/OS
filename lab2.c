@@ -16,6 +16,9 @@ int main(int argc, char *argv[], char **envp)
 {
   int MAX_STRING_LEN = 70; //given in the assigment
   char input[MAX_STRING_LEN];
+  size_t MAX_PATH_LEN = 70; //Because its a good number
+  char pathBuffer[MAX_PATH_LEN];
+  char *path;
   char **args;
   char *p;
   int nbrOfSpaces;
@@ -24,13 +27,15 @@ int main(int argc, char *argv[], char **envp)
   pid_t cpid;
 
   char EXIT_STRING[] = "exit";
+  char CD_STRING[] = "cd";
   int DEBUG = 0;
 
   printf("Welcome to miniTerm 0.1. Please state your commands\n");
 
 
   while(1){
-    printf(">");
+    path = getcwd(pathBuffer, MAX_PATH_LEN);
+    printf("%s>",path);
     //Get input
     p = fgets (input, MAX_STRING_LEN, stdin);
     //Remove \n at the end
@@ -72,6 +77,14 @@ int main(int argc, char *argv[], char **envp)
     if (strcmp((char *)args[0],EXIT_STRING) == 0){
       exit(EXIT_SUCCESS);
     }
+    if (strcmp((char *)args[0],CD_STRING) == 0){
+      if(nbrOfSpaces > 1){ // Checks that we have additional arguments
+        chdir((char *)args[1]);
+      } else {
+        printf("cd is used: cd <path>\n");
+      }
+      continue;
+    }
     
 
     time_t startTime = time(NULL);
@@ -97,16 +110,14 @@ int main(int argc, char *argv[], char **envp)
     { 
       while(1){
         waitpid(cpid, &status, 0);
-        free (args);
         if(status == 0){
+          free (args);
           printf("Program executed for %d seconds\n", (int) difftime(time(NULL),startTime));
           break; //Terminated in a correct way
         } else {
-        //Duno
-        // exit(EXIT_FAILURE);
-        //Do nothing
-          printf("Excution failed, returned status %d\n", status);
-          break; //Terminated in a correct way
+          if(WIFEXITED(status)){        
+            break; //Terminated in a correct way
+          }
         }
       }
       // printf("%s\n","I'm the Parent!");
